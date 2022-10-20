@@ -1,3 +1,4 @@
+import config.DBConnect;
 import constants.AppointmentStatus;
 import dao.ClientDao;
 import dao.ServiceOperatorDao;
@@ -7,6 +8,7 @@ import entity.Client;
 import entity.Slot;
 import utility.GenerateTimeSlot;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -33,6 +35,7 @@ public class Main {
             case 2 -> signup(sc);
             case 3 -> {
                 System.out.println("Thanks for using Online Scheduler,\nGood Bye!!");
+                DBConnect.getInstance().close();
                 System.exit(0);
             }
             default -> System.out.println("Enter a valid choice");
@@ -98,6 +101,7 @@ public class Main {
             case 5 -> showAvailableSlotsOfOperator(sc);
             case 6 -> {
                 System.out.println("Thanks for using Online Scheduler,\nGood Bye!!");
+                DBConnect.getInstance().close();
                 System.exit(0);
             }
             default -> System.out.println("Enter a valid choice");
@@ -109,9 +113,15 @@ public class Main {
         System.out.println("***************************************************");
         System.out.println("Please Select Operator Id From Below");
         try {
-            ServiceOperatorDao.getInstance().getServiceOperators().forEach(serviceOperator -> System.out.println(serviceOperator.operatorId() +"\t" + serviceOperator.operatorName()));
+            List<Integer> ids = new ArrayList<>();
+            ServiceOperatorDao.getInstance().getServiceOperators().forEach(serviceOperator -> {
+                ids.add(serviceOperator.operatorId());
+                System.out.println(serviceOperator.operatorId() +"\t" + serviceOperator.operatorName());
+            });
+            System.out.println("-1\tAny Operator");
             System.out.println("Please Choose Operator Id: ");
-            final int operatorId = sc.nextInt();
+            int operatorId = sc.nextInt();
+            operatorId = operatorId == - 1 ? ids.get((int) (ids.size() * Math.random())) : operatorId;
             System.out.println("Please select Date[dd/mm/yyyy]: ");
             String date = sc.next();
             System.out.println("Available Slots of the Operator are:  ");
@@ -256,8 +266,8 @@ public class Main {
             System.out.print("Please select Date[dd/mm/yyyy]: ");
             String date = sc.next();
             System.out.println("Available Time Slots are : ");
-            GenerateTimeSlot.getAvailableSlot(choice,date).forEach(
-                    slot -> System.out.println(slot.slot())
+            GenerateTimeSlot.getMergedSlot(choice,date).forEach(
+                    System.out::println
             );
         } catch (Exception e) {
             System.out.println("Something Went Wrong, Please try again!!");
@@ -274,5 +284,4 @@ public class Main {
             System.out.print("Your Choice: ");
             return sc.nextInt();
         }
-
 }

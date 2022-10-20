@@ -52,33 +52,9 @@ public class GenerateTimeSlot {
 
         return slots;
     }
-    private static String getSlot(int currentHour) {
-        StringBuilder stringBuilder = new StringBuilder();
-        if (currentHour == 0) {
-            stringBuilder.append("12:00 AM");
-        }else if (currentHour < 12) {
-            stringBuilder.append(currentHour < 10 ? "0" : "").append(currentHour).append(":00").append(" AM");
-        }else {
-            int n = currentHour % 12;
-            n = n == 0 ? 12 : n;
-            stringBuilder.append(n < 10 ? "0" : "").append(n).append(":00").append(" PM");
-        }
 
-        stringBuilder.append(" - ");
-
-        currentHour++;
-
-        if (currentHour < 12) {
-            stringBuilder.append(currentHour < 10 ? "0" : "").append(currentHour).append(":00").append(" AM");
-        }else if (currentHour == 24) {
-            stringBuilder.append("12:00 AM");
-        }else {
-            int n = currentHour % 12;
-            n = n == 0 ? 12 : n;
-            stringBuilder.append(n < 10 ? "0" : "").append(n).append(":00").append(" PM");
-        }
-
-        return stringBuilder.toString();
+    private static String getSlot(int hour) {
+        return String.format("%d-%d",hour,hour + 1);
     }
 
     public static List<Slot> getAvailableSlot(int operator, String dateOfAppointment) throws Exception {
@@ -92,15 +68,40 @@ public class GenerateTimeSlot {
                 result.add(new Slot(op.operatorId(),slot));
             }
         }
-
         for (Appointment gs : bookedSlot) {
             result.remove(new Slot(gs.operatorId(), gs.slot()));
         }
-
         if (operator != 0) {
             result = result.stream().filter(slot -> slot.operatorId() == operator).toList();
         }
-
         return result;
+    }
+
+    public static List<String> getMergedSlot(int operator, String dateOfAppointment) throws Exception {
+        List<String> result = new ArrayList<>();
+        List<String> slots = new ArrayList<>();
+        for (Slot s : getAvailableSlot(operator,dateOfAppointment)) slots.add(s.slot());
+        List<String> list = new ArrayList<>();
+        list.add(slots.get(0));
+
+        for (int i = 1; i < slots.size(); i++) {
+            String next = getNext(list.get(list.size() - 1));
+            if (next.equals(slots.get(i))) {
+                list.add(next);
+            }else {
+                result.add(merge(list.get(0),list.get(list.size() - 1)));
+                list.clear();
+                list.add(slots.get(i));
+            }
+        }
+        if (list.size() > 0) result.add(merge(list.get(0),list.get(list.size() - 1)));
+        return result;
+    }
+
+    private static String getNext(String slot) {
+        return (Integer.parseInt(slot.substring(0,slot.indexOf("-"))) + 1) + "-" + (Integer.parseInt(slot.substring(slot.lastIndexOf("-") + 1)) + 1);
+    }
+    private static String merge(String first,String last) {
+        return first.substring(0,first.indexOf("-")) + "-" + last.substring(last.lastIndexOf("-") + 1);
     }
 }
